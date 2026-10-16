@@ -14,10 +14,11 @@ Obras é o primeiro módulo disponível. A identidade do portal e a navegação 
 
 ## Executar
 
-Requer Node.js 22 ou superior e npm. Configure o ambiente PostgreSQL de leitura conforme `.env.example` e [a operação da VPS](docs/postgres.md). O site consulta o banco no servidor; nenhum segredo é enviado ao navegador.
+Requer Node.js 22 ou superior e npm. O site consulta o banco no servidor; nenhum segredo é enviado ao navegador. Para desenvolvimento, `npm run db:local` cria um PostgreSQL local no Docker com os snapshots versionados e gera o `.env.local` (veja [como contribuir](CONTRIBUTING.md#preparar-o-ambiente)). Para usar outra base de leitura, configure o ambiente conforme `.env.example` e [a operação da VPS](docs/postgres.md).
 
 ```sh
 npm ci
+npm run db:local
 npm run dev
 ```
 
