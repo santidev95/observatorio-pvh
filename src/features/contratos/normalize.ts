@@ -21,12 +21,31 @@ const record = (value: unknown): Record<string, unknown> =>
     : {};
 const items = (value: unknown) =>
   Array.isArray(value) ? value.map(record) : [];
-function supplierDocument(value: unknown) {
-  const document = text(value);
+const maskedCpf = (digits: string) => `${digits.slice(0, 3)}.***.***-**`;
+function supplierDocument(document: string | null) {
   if (!document) return null;
   const digits = document.replace(/\D/g, "");
   // Preserve CNPJ; avoid exporting unmasked personal CPF or contact details.
-  return digits.length === 11 ? `${digits.slice(0, 3)}.***.***-**` : document;
+  // CPFs digitados com erro mantem o formato NNN.NNN.NNN, mas nao 11 digitos.
+  return digits.length === 11 ||
+    (digits.length !== 14 && /^\d{3}\.?\d{3}\.?\d{3}/.test(document))
+    ? maskedCpf(digits)
+    : document;
+}
+// A fonte publica dados de representantes em textos livres.
+function personalText(value: unknown) {
+  return (
+    text(value)
+      ?.replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, (cpf) =>
+        maskedCpf(cpf.replace(/\D/g, "")),
+      )
+      .replace(
+        /(CPF[^\d*]{0,12})(\d[\d.\-\s]{8,14}\d)/gi,
+        (_, label, cpf) => label + maskedCpf(cpf.replace(/\D/g, "")),
+      )
+      .replace(/(\bR\.?G\.?(?![A-Za-z])[^\d*]{0,12})\d[\d.\-]*/g, "$1***") ??
+    null
+  );
 }
 export function normalizeContract(
   input: unknown,
@@ -46,16 +65,27 @@ export function normalizeContract(
     record(raw.fornecedor),
     ...items(raw.fornecedores).map((item) => record(item.fornecedor)),
   ]
-    .map((item) => ({
-      name: text(item.razao_social) ?? text(item.nome),
-      document: supplierDocument(item.documento),
-    }))
+    .map((item) => {
+      const document = text(item.documento);
+      return {
+        name: text(item.razao_social) ?? text(item.nome),
+        document: supplierDocument(document),
+        // Chave pelos digitos originais: CPFs mascarados podem coincidir.
+        key: document?.replace(/\D/g, "") || null,
+      };
+    })
     .filter(
-      (item): item is { name: string; document: string | null } => !!item.name,
+      (
+        item,
+      ): item is {
+        name: string;
+        document: string | null;
+        key: string | null;
+      } => !!item.name,
     );
   const uniqueSuppliers = [
     ...new Map(
-      suppliers.map((item) => [item.document ?? item.name, item]),
+      suppliers.map(({ key, ...item }) => [key ?? item.name, item]),
     ).values(),
   ];
   const documents = items(raw.arquivos).flatMap((file) => {
@@ -89,7 +119,7 @@ export function normalizeContract(
       typeof raw.contrato_ano === "number" && Number.isInteger(raw.contrato_ano)
         ? raw.contrato_ano
         : null,
-    object: text(raw.objeto),
+    object: personalText(raw.objeto),
     organization: text(agency.sigla),
     organizationName: text(agency.nome),
     status: text(raw.situacao) ?? "Não informada",
@@ -100,7 +130,7 @@ export function normalizeContract(
     startsAt: parseDate(raw.data_vigencia_inicio),
     endsAt: parseDate(raw.data_vigencia_fim),
     process: text(raw.numero_processo),
-    observation: text(raw.observacao),
+    observation: personalText(raw.observacao),
     addendumReported: typeof raw.aditivo === "boolean" ? raw.aditivo : null,
     suppliers: uniqueSuppliers,
     procurement:
