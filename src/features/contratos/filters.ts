@@ -8,6 +8,11 @@ export const defaultContractFilters = {
   sort: "updated",
 };
 export type ContractFilters = typeof defaultContractFilters;
+// Datas fora deste intervalo sao preservadas e sinalizadas na ficha.
+export const plausibleDates = { from: "1990-01-01", to: "2100-12-31" };
+export function plausibleSignature(date: string | null, today: string) {
+  return date && date >= plausibleDates.from && date <= today ? date : null;
+}
 export function readContractFilters(query: string): ContractFilters {
   const params = new URLSearchParams(query);
   return {
@@ -35,6 +40,7 @@ export function contractFilterQuery(filters: ContractFilters) {
 export function filterContracts(
   contracts: ContractSummary[],
   filters: ContractFilters,
+  today = new Date().toISOString().slice(0, 10),
 ) {
   const words = searchKey(filters.q.trim()).split(/\s+/).filter(Boolean);
   return contracts
@@ -71,8 +77,14 @@ export function filterContracts(
               : -1;
         return b.valueCents - a.valueCents || b.sourceId - a.sourceId;
       }
-      const dateA = filters.sort === "signed" ? a.signedAt : a.sourceUpdatedAt;
-      const dateB = filters.sort === "signed" ? b.signedAt : b.sourceUpdatedAt;
+      const dateA =
+        filters.sort === "signed"
+          ? plausibleSignature(a.signedAt, today)
+          : a.sourceUpdatedAt;
+      const dateB =
+        filters.sort === "signed"
+          ? plausibleSignature(b.signedAt, today)
+          : b.sourceUpdatedAt;
       return (
         (dateB ?? "").localeCompare(dateA ?? "") || b.sourceId - a.sourceId
       );

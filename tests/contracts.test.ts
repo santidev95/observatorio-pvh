@@ -146,3 +146,54 @@ test("contratos: busca sem acentos, combinação de filtros, URL e ordenação d
   );
   assert.equal(readContractFilters("ordem=unknown").sort, "updated");
 });
+test("contratos: datas improváveis são preservadas, sinalizadas e não lideram a ordenação por assinatura", () => {
+  const file = {
+    nome: "Aditivo",
+    arquivo: "https://anexos.portovelho.ro.gov.br/a.pdf",
+    data_contrato: "2026-11-14",
+    data_vigencia_inicio: "1202-11-21",
+  };
+  const odd = normalizeContract(
+    {
+      ...raw,
+      id: 2,
+      data_assinatura: "2099-11-06",
+      data_vigencia_inicio: "0023-02-24",
+      data_vigencia_fim: "2104-02-22",
+      arquivos: [file],
+    },
+    at,
+  );
+  assert.equal(odd.signedAt, "2099-11-06");
+  assert.equal(odd.startsAt, "0023-02-24");
+  assert.equal(odd.documents[0].startsAt, "1202-11-21");
+  assert.deepEqual(odd.issues, [
+    "A fonte informa assinatura posterior à coleta (06/11/2099); data preservada.",
+    "A fonte informa data improvável (início da vigência: 24/02/0023); data preservada.",
+    "A fonte informa data improvável (fim da vigência: 22/02/2104); data preservada.",
+    "A fonte informa assinatura de documento posterior à coleta (14/11/2026); data preservada.",
+    "A fonte informa data improvável (início da vigência de documento: 21/11/1202); data preservada.",
+  ]);
+  const regular = normalizeContract(
+    {
+      ...raw,
+      data_assinatura: "2026-10-01",
+      data_vigencia_inicio: "2026-10-01",
+    },
+    at,
+  );
+  assert.deepEqual(regular.issues, []);
+  const ancient = normalizeContract(
+    { ...raw, id: 3, data_assinatura: "0202-11-28" },
+    at,
+  );
+  const unsigned = normalizeContract({ ...raw, id: 4 }, at);
+  assert.deepEqual(
+    filterContracts(
+      [odd, ancient, unsigned, regular],
+      { ...defaultContractFilters, sort: "signed" },
+      "2026-10-15",
+    ).map((item) => item.sourceId),
+    [1, 4, 3, 2],
+  );
+});
