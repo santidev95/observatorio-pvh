@@ -38,7 +38,15 @@ export function normalizeContract(
   const issues: string[] = [];
   const amount = (value: unknown, label: string) => {
     const cents = moneyToCents(value);
-    if (value !== null && value !== undefined && value !== "" && cents === null)
+    // A API envia ausencia como {"value": null, "formatted": "0"}.
+    const scalar =
+      value && typeof value === "object" ? record(value).value : value;
+    if (
+      scalar !== null &&
+      scalar !== undefined &&
+      scalar !== "" &&
+      cents === null
+    )
       issues.push(`${label}: formato monetário inválido; valor indisponível.`);
     return cents;
   };
@@ -126,6 +134,7 @@ export function normalizeContract(
     issues.push(
       "Valor igual ou superior a R$ 1 bilhão informado na fonte; confira o documento original antes de comparações. O valor foi preservado.",
     );
+  core.issues = [...new Set(issues)];
   const contentHash = stableHash(core);
   return contractSchema.parse({
     ...core,
