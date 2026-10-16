@@ -30,7 +30,7 @@ export function ContractCatalog({ view }: { view: ContractCatalogView }) {
           </span>
           <input
             type="search"
-            placeholder="Buscar por contrato, objeto, empresa ou processo..."
+            placeholder="Buscar por contrato, objeto, empresa, CNPJ ou processo..."
             value={draft.q}
             maxLength={300}
             onChange={(event) => update({ q: event.target.value })}

@@ -146,3 +146,40 @@ test("contratos: busca sem acentos, combinação de filtros, URL e ordenação d
   );
   assert.equal(readContractFilters("ordem=unknown").sort, "updated");
 });
+test("contratos: CNPJ e processo são encontrados com ou sem pontuação", () => {
+  const formatted = normalizeContract(
+    { ...raw, numero_processo: "017.005607/2025-63" },
+    at,
+  );
+  const plain = normalizeContract(
+    {
+      ...raw,
+      id: 2,
+      numero: "Contrato 126/2026",
+      fornecedor: { nome: "Empresa A", documento: "12345678000199" },
+    },
+    at,
+  );
+  const other = normalizeContract(
+    {
+      ...raw,
+      id: 3,
+      fornecedor: { nome: "Empresa B", documento: "98.765.432/0001-10" },
+    },
+    at,
+  );
+  const search = (q: string) =>
+    filterContracts([formatted, plain, other], {
+      ...defaultContractFilters,
+      q,
+    })
+      .map((item) => item.sourceId)
+      .sort();
+  assert.deepEqual(search("12345678000199"), [1, 2]);
+  assert.deepEqual(search("12.345.678/0001-99"), [1, 2]);
+  assert.deepEqual(search("017005607202563"), [1]);
+  assert.deepEqual(search("017.005607/2025-63"), [1]);
+  assert.deepEqual(search("1262026"), [2]);
+  assert.deepEqual(search("98765432000110 empresa"), [3]);
+  assert.deepEqual(search("001/2026"), [1, 3]);
+});
