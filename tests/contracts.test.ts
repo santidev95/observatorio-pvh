@@ -65,6 +65,39 @@ test("contratos: valores ausentes e zero são distintos, documentos externos e c
   assert.equal(large.valueCents, 1041129300000000);
   assert.ok(large.issues.some((issue) => issue.includes("R$ 1 bilhão")));
 });
+test("contratos: valor ausente no envelope da API não é formato inválido e avisos não se repetem", () => {
+  const absent = { value: null, formatted: "0", brl: "R$ 0" };
+  const file = (valor: unknown) => ({
+    nome: "Aditivo",
+    arquivo: "https://anexos.portovelho.ro.gov.br/a.pdf",
+    valor,
+  });
+  const contract = normalizeContract(
+    {
+      ...raw,
+      valor_executado: absent,
+      arquivos: [file(absent), file({ value: 0 })],
+    },
+    at,
+  );
+  assert.equal(contract.executedCents, null);
+  assert.equal(contract.documents[0].valueCents, null);
+  assert.equal(contract.documents[1].valueCents, 0);
+  assert.deepEqual(contract.issues, []);
+  const invalid = normalizeContract(
+    {
+      ...raw,
+      valor_executado: { value: "abc" },
+      arquivos: [file("x"), file("y"), file("z")],
+    },
+    at,
+  );
+  assert.equal(invalid.executedCents, null);
+  assert.deepEqual(invalid.issues, [
+    "Valor do documento: formato monetário inválido; valor indisponível.",
+    "Executado informado: formato monetário inválido; valor indisponível.",
+  ]);
+});
 test("contratos: hashes ignoram datas de coleta, mudanças e ausências preservam histórico", () => {
   const first = normalizeContract(raw, at);
   const unchanged = normalizeContract(raw, "2026-10-12T10:00:00Z", first);
