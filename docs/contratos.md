@@ -14,8 +14,9 @@ reaplica em cada página e converte HTTP para HTTPS.
 
 ## Dados e limites
 
-- Busca por número, objeto, processo, empresa e documento; filtros por ano,
-  órgão e situação; ordenação e paginação. Busca e filtros permanecem na URL.
+- Busca por número, objeto, processo, empresa e documento; CNPJ e processo
+  são encontrados com ou sem pontuação. Filtros por ano, órgão e situação;
+  ordenação e paginação. Busca e filtros permanecem na URL.
 - Valores em centavos; ausência não equivale a zero. `valor_executado` é
   identificado como “Executado informado”, sem tratá-lo como total pago.
 - Assinatura, vigência, documentos e indicação de aditivo vêm da API.
