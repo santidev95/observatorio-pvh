@@ -1,0 +1,92 @@
+# PostgreSQL de desenvolvimento, somente em 127.0.0.1. Derivado de
+# ops/postgres/compose.tls.yaml: o site exige TLS verificado tambem localmente.
+# Use `npm run db:local`; nao utilize este arquivo na VPS.
+name: observatorio-local
+
+services:
+  postgres_tls:
+    image: postgres:17
+    restart: "no"
+    user: "0:0"
+    volumes:
+      - postgres_tls:/tls
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - |
+        umask 077
+        if [ ! -e /tls/server.crt ]; then
+          openssl req -x509 -newkey rsa:3072 -nodes -sha256 -days 3650 \
+            -keyout /tls/ca.key -out /tls/ca.crt \
+            -subj "/CN=Observatorio PVH Local CA" \
+            -addext "basicConstraints=critical,CA:TRUE" \
+            -addext "keyUsage=critical,keyCertSign,cRLSign"
+          openssl req -new -newkey rsa:3072 -nodes -sha256 \
+            -keyout /tls/server.key -out /tls/server.csr \
+            -subj "/CN=127.0.0.1"
+          printf '%s\n' \
+            'basicConstraints=critical,CA:FALSE' \
+            'keyUsage=critical,digitalSignature,keyEncipherment' \
+            'extendedKeyUsage=serverAuth' \
+            'subjectAltName=IP:127.0.0.1,DNS:localhost' > /tls/server.ext
+          openssl x509 -req -in /tls/server.csr \
+            -CA /tls/ca.crt -CAkey /tls/ca.key -CAcreateserial \
+            -out /tls/server.crt -days 3650 -sha256 -extfile /tls/server.ext
+        fi
+        openssl verify -CAfile /tls/ca.crt /tls/server.crt
+        printf '%s\n' \
+          'local all all scram-sha-256' \
+          'hostnossl all all 0.0.0.0/0 reject' \
+          'hostnossl all all ::/0 reject' \
+          'hostssl all all 0.0.0.0/0 scram-sha-256' \
+          'hostssl all all ::/0 scram-sha-256' > /tls/pg_hba.conf
+        chmod 755 /tls
+        chmod 600 /tls/ca.key
+        chown postgres:postgres /tls/server.key
+        chmod 600 /tls/server.key
+        chmod 644 /tls/ca.crt /tls/server.crt /tls/pg_hba.conf
+
+  postgresql:
+    image: postgres:17
+    restart: unless-stopped
+    depends_on:
+      postgres_tls:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${LOCAL_POSTGRES_PORT:-55432}:5432"
+    environment:
+      POSTGRES_USER: observatorio_admin
+      # Gerada por npm run db:local; opcional aqui para permitir `down -v`.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: observatorio_pvh
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_tls:/etc/postgresql/tls:ro
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+      - -c
+      - ssl_cert_file=/etc/postgresql/tls/server.crt
+      - -c
+      - ssl_key_file=/etc/postgresql/tls/server.key
+      - -c
+      - hba_file=/etc/postgresql/tls/pg_hba.conf
+      - -c
+      - password_encryption=scram-sha-256
+    healthcheck:
+      # TCP evita considerar pronto o servidor temporario da inicializacao.
+      test:
+        [
+          "CMD-SHELL",
+          'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"',
+        ]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  postgres_data:
+  postgres_tls:

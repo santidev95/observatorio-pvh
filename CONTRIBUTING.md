@@ -17,17 +17,27 @@ Não publique senhas, tokens, chaves de acesso ou dados pessoais desnecessários
 
 ## Preparar o ambiente
 
-Você precisa de Node.js 22 ou superior e npm. Faça um fork do repositório no GitHub e clone sua cópia, substituindo `SEU_USUARIO` abaixo:
+Você precisa de Node.js 22 ou superior, npm e Docker. Faça um fork do repositório no GitHub e clone sua cópia, substituindo `SEU_USUARIO` abaixo:
 
 ```sh
 git clone https://github.com/SEU_USUARIO/observatorio-pvh.git
 cd observatorio-pvh
 git switch -c minha-contribuicao
 npm ci
+npm run db:local
 npm run dev
 ```
 
-Abra o endereço informado no terminal. As bases coletadas já estão versionadas: para trabalhar na interface, documentação ou testes, não é necessário configurar Supabase nem executar uma nova coleta.
+Abra o endereço informado no terminal. As páginas leem um banco PostgreSQL a cada requisição, por isso `npm run db:local` cria um PostgreSQL 17 de desenvolvimento no Docker, acessível somente em `127.0.0.1:55432`, com TLS verificado como em produção. O comando aplica as migrações e importa os snapshots versionados em `data/`, sem consultar a API municipal, o Supabase ou a base de produção. As credenciais geradas ficam em arquivos `.env*.local`, ignorados pelo Git, e o `.env.local` resultante usa o usuário de leitura. Para trabalhar na interface, documentação ou testes, não é necessário executar uma nova coleta.
+
+Se a porta estiver ocupada, defina `LOCAL_POSTGRES_PORT` antes da primeira execução do comando; as credenciais geradas guardam a porta escolhida. Para recomeçar do zero, remova o banco local e os arquivos gerados:
+
+```sh
+docker compose -f ops/local/compose.yaml down -v
+rm .env.local .env.postgres.local .env.postgres-sync.local .env.postgres-admin.local
+```
+
+`npm run typecheck` e `npm test` não dependem do banco local.
 
 ## Onde encontrar o código
 
@@ -38,6 +48,7 @@ Abra o endereço informado no terminal. As bases coletadas já estão versionada
 | `src/features/`           | Funcionalidades dos módulos de obras, contratos e receitas |
 | `src/lib/`                | Leitura, validação e normalização dos dados                |
 | `scripts/`                | Coleta, exportação e prévia local                          |
+| `ops/`                    | Operação do banco; `ops/local/` para desenvolvimento       |
 | `tests/`                  | Testes de dados e comportamentos críticos                  |
 | `docs/`                   | Fontes, decisões, arquitetura e operação                   |
 | `data/` e `public/dados/` | Bases utilizadas pelo site e seus downloads                |

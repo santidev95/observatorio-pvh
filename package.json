@@ -25,6 +25,7 @@
     "data:export": "tsx scripts/export-supabase.ts",
     "db:setup": "tsx scripts/setup-postgres.ts",
     "db:seed": "tsx scripts/seed-postgres.ts",
+    "db:local": "node scripts/local-db.mjs",
     "db:hyperdrive": "tsx scripts/configure-hyperdrive.ts",
     "probe": "node scripts/probe.mjs"
   },

@@ -95,6 +95,7 @@ RTK, execute os comandos abaixo com o prefixo descrito anteriormente.
 | Comando                    | Uso                                        |
 | -------------------------- | ------------------------------------------ |
 | `npm ci`                   | Instalar dependencias e aplicar os patches |
+| `npm run db:local`         | PostgreSQL local no Docker com snapshots   |
 | `npm run dev`              | Desenvolvimento local com `.env.local`     |
 | `npm run typecheck`        | Validacao TypeScript                       |
 | `npm test`                 | Testes de dominio, leitores e ingestao     |
