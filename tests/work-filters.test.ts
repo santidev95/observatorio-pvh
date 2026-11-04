@@ -46,6 +46,26 @@ test("search finds accented titles, suppliers, locations and responsible organiz
     assert.equal(filterWorks([work], { ...defaultFilters, q }).length, 1);
 });
 
+test("search finds CNPJ, process and contract numbers with or without punctuation", () => {
+  const work = {
+    ...fixture(),
+    supplierDocument: "12.345.678/0001-99",
+    process: "11.00022/2022",
+    contractNumber: "CONTRATO Nº 048/PGM/2022",
+  };
+  const other = { ...work, id: "pvh-2", supplierDocument: "98765432000110" };
+  const search = (q: string) =>
+    filterWorks([work, other], { ...defaultFilters, q }).map((item) => item.id);
+  for (const q of ["12.345.678/0001-99", "12345678000199"])
+    assert.deepEqual(search(q), [work.id]);
+  assert.deepEqual(search("98.765.432/0001-10"), ["pvh-2"]);
+  for (const q of ["11.00022/2022", "11000222022"])
+    assert.equal(search(q).length, 2);
+  assert.equal(search("0482022").length, 2);
+  assert.deepEqual(search("00000000000000"), []);
+  assert.deepEqual(search("123"), []);
+});
+
 test("filters combine exactly and never infer a neighborhood from free text", () => {
   const work = {
     ...fixture(),

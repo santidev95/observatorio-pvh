@@ -1,5 +1,5 @@
 import type { Work } from "./schema";
-import { searchKey } from "./display";
+import { documentDigits, documentSearchTerm, searchKey } from "./display";
 
 export type Filters = {
   q: string;
@@ -39,6 +39,7 @@ export function filterQuery(filters: Filters) {
 
 export function filterWorks(works: Work[], filters: Filters) {
   const query = searchKey(filters.q.trim());
+  const documentTerm = documentSearchTerm(query);
   return works
     .filter(
       (work) =>
@@ -48,12 +49,17 @@ export function filterWorks(works: Work[], filters: Filters) {
               work.title,
               work.contractNumber,
               work.supplier,
+              work.supplierDocument,
               work.process,
               work.organization,
               work.organizationName,
               ...work.locations,
             ].join(" "),
-          ).includes(query)) &&
+          ).includes(query) ||
+          (documentTerm !== null &&
+            [work.supplierDocument, work.process, work.contractNumber].some(
+              (value) => documentDigits(value).includes(documentTerm),
+            ))) &&
         (!filters.status || work.status === filters.status) &&
         (!filters.org || work.organization === filters.org) &&
         (!filters.neighborhood || work.neighborhood === filters.neighborhood),
