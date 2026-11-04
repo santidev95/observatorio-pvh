@@ -64,7 +64,7 @@ Esses números descrevem esta coleta e podem mudar. Consulte o arquivo de fontes
 ## Funcionalidades
 
 - Visão geral com cobertura das somas, sem tratar a base como orçamento atual ou censo municipal completo.
-- Busca por objeto, localização, contrato, processo e fornecedor; filtros por situação e órgão, ordenação e paginação.
+- Busca por objeto, localização, contrato, processo, fornecedor e CNPJ, com ou sem pontuação; filtros por situação e órgão, ordenação e paginação.
 - URLs preservam busca e filtros. Bairro permanece indisponível porque a fonte não oferece campo padronizado.
 - Fichas dinâmicas com valores, contratos, vigências, medições, anexos, proveniência e limites de qualidade, inclusive para novos IDs após a publicação.
 - Página de fontes e método, download JSON, estado sem resultados, estado sem base, falha de coleta e 404.

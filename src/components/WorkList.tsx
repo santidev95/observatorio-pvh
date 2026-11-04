@@ -141,13 +141,13 @@ export function WorkList({
           <div className="search-field">
             <Search size={20} aria-hidden="true" />
             <label className="sr-only" htmlFor="work-search">
-              Buscar obra ou localização
+              Buscar obra, localização, empresa, CNPJ ou processo
             </label>
             <input
               id="work-search"
               type="search"
               value={filters.q}
-              placeholder="Buscar obra ou localização"
+              placeholder="Obra, empresa, CNPJ ou processo"
               enterKeyHint="search"
               aria-describedby="work-search-help"
               onChange={(event) => update({ q: event.target.value })}

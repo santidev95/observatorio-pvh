@@ -1,4 +1,4 @@
-import { searchKey } from "@/lib/display";
+import { documentDigits, documentSearchTerm, searchKey } from "@/lib/display";
 import type { ContractSummary } from "./schema";
 export const defaultContractFilters = {
   q: "",
@@ -37,10 +37,6 @@ export function filterContracts(
   filters: ContractFilters,
 ) {
   const words = searchKey(filters.q.trim()).split(/\s+/).filter(Boolean);
-  // CNPJ e processo costumam ser copiados com ou sem pontuacao.
-  const digits = (value: string | null) => value?.replace(/\D/g, "") ?? "";
-  const documentWord = (word: string) =>
-    /^[\d./-]+$/.test(word) && digits(word).length >= 5 ? digits(word) : null;
   return contracts
     .filter((contract) => {
       if (
@@ -67,9 +63,9 @@ export function filterContracts(
         contract.number,
         contract.process,
         ...contract.suppliers.map((supplier) => supplier.document),
-      ].map(digits);
+      ].map(documentDigits);
       return words.every((word) => {
-        const number = documentWord(word);
+        const number = documentSearchTerm(word);
         return (
           haystack.includes(word) ||
           (number !== null && documents.some((item) => item.includes(number)))

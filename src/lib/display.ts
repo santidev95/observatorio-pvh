@@ -33,6 +33,13 @@ export const searchKey = (value: string) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+// CNPJ e processo costumam ser copiados com ou sem pontuacao.
+export const documentDigits = (value: string | null) =>
+  value?.replace(/\D/g, "") ?? "";
+export const documentSearchTerm = (word: string) =>
+  /^[\d./-]+$/.test(word) && documentDigits(word).length >= 5
+    ? documentDigits(word)
+    : null;
 export function freshness(w: Work, asOf: string) {
   if (!w.sourceUpdatedAt) return "Data não informada";
   return (Date.parse(asOf) - Date.parse(w.sourceUpdatedAt)) / 86400000 > 180
