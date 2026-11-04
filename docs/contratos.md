@@ -21,6 +21,8 @@ reaplica em cada página e converte HTTP para HTTPS.
   identificado como “Executado informado”, sem tratá-lo como total pago.
 - Assinatura, vigência, documentos e indicação de aditivo vêm da API.
   Valores dos documentos não são somados ao valor do contrato.
+- Documentos idênticos em todos os campos aparecem uma vez. Registros que usam o
+  mesmo arquivo com dados diferentes são preservados e sinalizados na ficha.
 - Situação é a publicada pela fonte, sem classificação automática pela vigência.
 - A API possui valores históricos de trilhões de reais. Preservamos os valores,
   sinalizamos contratos com valor igual ou superior a R$ 1 bilhão para conferência
