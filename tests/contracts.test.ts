@@ -6,7 +6,10 @@ import {
   failedContractSnapshot,
   safeContractPageUrl,
 } from "../src/features/contratos/sync-core";
-import { contractSnapshotSchema } from "../src/features/contratos/schema";
+import {
+  contractSchema,
+  contractSnapshotSchema,
+} from "../src/features/contratos/schema";
 import {
   defaultContractFilters,
   filterContracts,
@@ -182,4 +185,49 @@ test("contratos: CNPJ e processo são encontrados com ou sem pontuação", () =>
   assert.deepEqual(search("1262026"), [2]);
   assert.deepEqual(search("98765432000110 empresa"), [3]);
   assert.deepEqual(search("001/2026"), [1, 3]);
+});
+test("contratos: empenhos e modalidade da licitação vêm da fonte, sem repetição", () => {
+  const contract = normalizeContract(
+    {
+      ...raw,
+      empenhos: [
+        { id: 1, empenho: "00003181/2026", created_at: "2026-11-03T17:25:17Z" },
+        { id: 2, empenho: "00003181/2026" },
+        { id: 3, empenho: "0000123/2025" },
+        { id: 4, empenho: null },
+        { id: 5 },
+      ],
+      licitacao: { id: 7, titulo: "Pregão 1", modalidade: "Pregão Eletrônico" },
+    },
+    at,
+  );
+  assert.deepEqual(contract.commitments, ["00003181/2026", "0000123/2025"]);
+  assert.equal(contract.procurement?.modality, "Pregão Eletrônico");
+  const absent = normalizeContract(
+    { ...raw, licitacao: { id: 7, titulo: "Pregão 1" } },
+    at,
+  );
+  assert.deepEqual(absent.commitments, []);
+  assert.equal(absent.procurement?.modality, null);
+  const later = normalizeContract(
+    { ...raw, empenhos: [{ id: 9, empenho: "1/2026", created_at: "2027" }] },
+    at,
+  );
+  const same = normalizeContract(
+    { ...raw, empenhos: [{ id: 8, empenho: "1/2026", created_at: "2028" }] },
+    at,
+  );
+  assert.equal(later.contentHash, same.contentHash);
+});
+test("contratos: registros gravados sem empenhos e modalidade continuam válidos", () => {
+  const contract = normalizeContract(
+    { ...raw, licitacao: { id: 7, titulo: "Pregão 1" } },
+    at,
+  );
+  const stored = JSON.parse(JSON.stringify(contract));
+  delete stored.commitments;
+  delete stored.procurement.modality;
+  const parsed = contractSchema.parse(stored);
+  assert.deepEqual(parsed.commitments, []);
+  assert.equal(parsed.procurement?.modality, null);
 });

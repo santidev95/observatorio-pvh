@@ -208,6 +208,8 @@ export default async function ContractDetail({
             >
               {contract.procurement.title} <ArrowUpRight size={14} />
             </a>
+            {contract.procurement.modality &&
+              ` · Modalidade: ${contract.procurement.modality}`}
           </p>
         )}
         <p className="overview-note">
@@ -215,6 +217,19 @@ export default async function ContractDetail({
           ou valores.
         </p>
       </section>
+      {contract.commitments.length > 0 && (
+        <section
+          className="contract-section"
+          aria-labelledby="contract-commitments"
+        >
+          <h2 id="contract-commitments">Empenhos informados</h2>
+          <p>{contract.commitments.join(" · ")}</p>
+          <p className="overview-note">
+            Números publicados pela fonte. Empenho é a reserva de recursos no
+            orçamento e não indica valor pago.
+          </p>
+        </section>
+      )}
       {contract.observation && (
         <section className="contract-section">
           <h2>Observações da fonte</h2>
