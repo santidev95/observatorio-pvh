@@ -7,6 +7,7 @@ import {
   text,
 } from "../../lib/normalize";
 import { contractSchema, type Contract } from "./schema";
+import { plausibleDates } from "./filters";
 
 export const rawContractSchema = z
   .object({
@@ -122,6 +123,29 @@ export function normalizeContract(
     issues.push(
       "A fonte informa fim de vigência anterior ao início; datas preservadas.",
     );
+  const collectedOn = collectedAt.slice(0, 10);
+  const dateLabel = (value: string) => value.split("-").reverse().join("/");
+  for (const [label, value, signature] of [
+    ["assinatura", core.signedAt, true],
+    ["início da vigência", core.startsAt, false],
+    ["fim da vigência", core.endsAt, false],
+    ...documents.flatMap((document) => [
+      ["assinatura de documento", document.signedAt, true] as const,
+      ["início da vigência de documento", document.startsAt, false] as const,
+      ["fim da vigência de documento", document.endsAt, false] as const,
+      ["publicação de documento", document.publishedAt, false] as const,
+    ]),
+  ] as const) {
+    if (!value) continue;
+    if (value < plausibleDates.from || value > plausibleDates.to)
+      issues.push(
+        `A fonte informa data improvável (${label}: ${dateLabel(value)}); data preservada.`,
+      );
+    else if (signature && value > collectedOn)
+      issues.push(
+        `A fonte informa ${label} posterior à coleta (${dateLabel(value)}); data preservada.`,
+      );
+  }
   if (core.valueCents !== null && core.valueCents >= 100_000_000_000)
     issues.push(
       "Valor igual ou superior a R$ 1 bilhão informado na fonte; confira o documento original antes de comparações. O valor foi preservado.",
