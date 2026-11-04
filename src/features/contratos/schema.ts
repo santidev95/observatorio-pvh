@@ -20,6 +20,9 @@ export const contractSchema = z.object({
   category: z.string().nullable(),
   valueCents: money,
   executedCents: money,
+  // Linhas gravadas antes destes campos continuam validas ate a proxima coleta.
+  publication: z.string().nullable().default(null),
+  publishedAt: date.default(null),
   signedAt: date,
   startsAt: date,
   endsAt: date,
@@ -37,6 +40,7 @@ export const contractSchema = z.object({
       title: z.string(),
       url: z.string().url(),
       status: z.string().nullable(),
+      publication: z.string().nullable().default(null),
       publishedAt: date,
       signedAt: date,
       startsAt: date,

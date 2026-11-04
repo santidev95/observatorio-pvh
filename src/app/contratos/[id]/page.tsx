@@ -103,6 +103,10 @@ export default async function ContractDetail({
                 "Não informado",
             ],
             ["Processo", contract.process ?? "Não informado"],
+            [
+              "Publicação",
+              contract.publication ?? dateLabel(contract.publishedAt),
+            ],
             ["Assinatura", dateLabel(contract.signedAt)],
             ["Início da vigência", dateLabel(contract.startsAt)],
             ["Fim da vigência", dateLabel(contract.endsAt)],
@@ -162,8 +166,9 @@ export default async function ContractDetail({
                     {document.title} <ArrowUpRight size={14} />
                   </a>
                   <p>
-                    Publicação: {dateLabel(document.publishedAt)} · Valor
-                    informado: {currency(document.valueCents)}
+                    Publicação:{" "}
+                    {document.publication ?? dateLabel(document.publishedAt)} ·
+                    Valor informado: {currency(document.valueCents)}
                   </p>
                   <small>
                     Vigência: {dateLabel(document.startsAt)} a{" "}
