@@ -30,7 +30,11 @@ reaplica em cada página e converte HTTP para HTTPS.
   valores similares não são usados para inventar relações.
 - Links de anexos são restritos às origens oficiais de Porto Velho. E-mails,
   telefones e endereços dos fornecedores não são exportados. CPF numérico
-  completo é mascarado; CNPJ é preservado.
+  completo é mascarado; CNPJ é preservado. Documentos no formato de CPF com
+  erro de digitação também são mascarados, assim como CPF e RG citados no
+  objeto e na observação. Fornecedores são deduplicados pelos dígitos do
+  documento original, antes do mascaramento. Endereços em texto livre não são
+  identificados automaticamente.
 
 ## Persistência e atualização
 

@@ -65,6 +65,61 @@ test("contratos: valores ausentes e zero são distintos, documentos externos e c
   assert.equal(large.valueCents, 1041129300000000);
   assert.ok(large.issues.some((issue) => issue.includes("R$ 1 bilhão")));
 });
+test("contratos: CPF e RG em textos livres e CPFs digitados com erro são mascarados", () => {
+  const contract = normalizeContract(
+    {
+      ...raw,
+      objeto: "Serviço prestado por pessoa física, CPF nº 98765432100.",
+      observacao:
+        "Representante Legal: Pessoa Teste ◦ CPF: 123.456.789-01 ◦ RG: 1234567 SSP/RO ◦ R.G. 7654321",
+      fornecedores: [
+        { fornecedor: { nome: "Pessoa A", documento: "111.222.333-4" } },
+        { fornecedor: { nome: "Pessoa B", documento: "111.222.333/2019" } },
+        { fornecedor: { nome: "Empresa C", documento: "1.234.567/0001-99" } },
+      ],
+    },
+    at,
+  );
+  assert.equal(
+    contract.object,
+    "Serviço prestado por pessoa física, CPF nº 987.***.***-**.",
+  );
+  assert.equal(
+    contract.observation,
+    "Representante Legal: Pessoa Teste ◦ CPF: 123.***.***-** ◦ RG: *** SSP/RO ◦ R.G. ***",
+  );
+  assert.deepEqual(
+    contract.suppliers.map((item) => item.document),
+    [
+      "12.345.678/0001-99",
+      "111.***.***-**",
+      "111.***.***-**",
+      "1.234.567/0001-99",
+    ],
+  );
+  const text = JSON.stringify(contract);
+  for (const value of ["98765432100", "456.789", "1234567", "7654321"])
+    assert.ok(!text.includes(value));
+});
+test("contratos: fornecedores são deduplicados pelo documento original", () => {
+  const contract = normalizeContract(
+    {
+      ...raw,
+      fornecedor: { nome: "Pessoa A", documento: "123.456.789-01" },
+      fornecedores: [
+        { fornecedor: { nome: "Pessoa B", documento: "123.999.888-77" } },
+        { fornecedor: { nome: "Pessoa A", documento: "12345678901" } },
+        { fornecedor: { nome: "Empresa", documento: "12.345.678/0001-99" } },
+        { fornecedor: { nome: "Empresa", documento: "12345678000199" } },
+      ],
+    },
+    at,
+  );
+  assert.deepEqual(
+    contract.suppliers.map((item) => item.name),
+    ["Pessoa A", "Pessoa B", "Empresa"],
+  );
+});
 test("contratos: hashes ignoram datas de coleta, mudanças e ausências preservam histórico", () => {
   const first = normalizeContract(raw, at);
   const unchanged = normalizeContract(raw, "2026-10-12T10:00:00Z", first);
