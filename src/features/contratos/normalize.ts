@@ -58,7 +58,7 @@ export function normalizeContract(
       suppliers.map((item) => [item.document ?? item.name, item]),
     ).values(),
   ];
-  const documents = items(raw.arquivos).flatMap((file) => {
+  const files = items(raw.arquivos).flatMap((file) => {
     const url = officialUrl(file.arquivo);
     if (!url) {
       issues.push(
@@ -79,6 +79,15 @@ export function normalizeContract(
       },
     ];
   });
+  // A fonte tem registros identicos criados com segundos de diferenca.
+  const documents = [
+    ...new Map(files.map((file) => [JSON.stringify(file), file])).values(),
+  ];
+  // Dados diferentes no mesmo arquivo sao preservados: nao ha como saber o correto.
+  if (new Set(documents.map((file) => file.url)).size < documents.length)
+    issues.push(
+      "A fonte usa o mesmo arquivo em documentos com dados diferentes; confira o documento original.",
+    );
   const procurement = record(raw.licitacao);
   const sourceId = raw.id;
   const core = {

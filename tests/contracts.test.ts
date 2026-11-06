@@ -183,3 +183,49 @@ test("contratos: CNPJ e processo são encontrados com ou sem pontuação", () =>
   assert.deepEqual(search("98765432000110 empresa"), [3]);
   assert.deepEqual(search("001/2026"), [1, 3]);
 });
+test("contratos: documentos idênticos aparecem uma vez e divergências no mesmo arquivo são preservadas", () => {
+  const file = {
+    nome: "Termo Aditivo",
+    arquivo: "https://anexos.portovelho.ro.gov.br/termo.pdf",
+    valor: { value: 100 },
+    data_vigencia_inicio: "2024-01-29",
+  };
+  const other = {
+    ...file,
+    arquivo: "https://anexos.portovelho.ro.gov.br/b.pdf",
+  };
+  const repeated = normalizeContract(
+    { ...raw, arquivos: [file, other, { ...file }, { ...file }] },
+    at,
+  );
+  assert.deepEqual(
+    repeated.documents.map((item) => item.url),
+    [
+      "https://anexos.portovelho.ro.gov.br/termo.pdf",
+      "https://anexos.portovelho.ro.gov.br/b.pdf",
+    ],
+  );
+  assert.deepEqual(repeated.issues, []);
+  const divergent = normalizeContract(
+    {
+      ...raw,
+      arquivos: [
+        file,
+        { ...file, valor: { value: 200 } },
+        { ...file, nome: "Outro" },
+      ],
+    },
+    at,
+  );
+  assert.deepEqual(
+    divergent.documents.map((item) => [item.title, item.valueCents]),
+    [
+      ["Termo Aditivo", 10000],
+      ["Termo Aditivo", 20000],
+      ["Outro", 10000],
+    ],
+  );
+  assert.deepEqual(divergent.issues, [
+    "A fonte usa o mesmo arquivo em documentos com dados diferentes; confira o documento original.",
+  ]);
+});
