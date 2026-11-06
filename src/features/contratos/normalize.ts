@@ -28,6 +28,21 @@ function supplierDocument(value: unknown) {
   // Preserve CNPJ; avoid exporting unmasked personal CPF or contact details.
   return digits.length === 11 ? `${digits.slice(0, 3)}.***.***-**` : document;
 }
+// Publicacao e texto livre na fonte; sem letra nem digito nao informa nada.
+function publicationText(value: unknown) {
+  const published = text(value);
+  return published && /[\p{L}\d]/u.test(published) ? published : null;
+}
+function publicationDate(published: string | null) {
+  if (!published) return null;
+  const compact = published.match(/^(\d{2})(\d{2})(\d{4})$/);
+  if (compact) return parseDate(`${compact[1]}/${compact[2]}/${compact[3]}`);
+  // Mais de uma data no texto e ambiguo: preserva o texto, sem escolher.
+  const dates = new Set(published.match(/\b\d{2}\/\d{2}\/\d{4}\b/g) ?? []);
+  return (
+    parseDate(published) ?? (dates.size === 1 ? parseDate([...dates][0]) : null)
+  );
+}
 export function normalizeContract(
   input: unknown,
   collectedAt: string,
@@ -66,12 +81,14 @@ export function normalizeContract(
       );
       return [];
     }
+    const publication = publicationText(file.publicacao);
     return [
       {
         title: text(file.nome) ?? "Documento do contrato",
         url,
         status: text(file.situacao),
-        publishedAt: parseDate(file.publicacao),
+        publication,
+        publishedAt: publicationDate(publication),
         signedAt: parseDate(file.data_contrato),
         startsAt: parseDate(file.data_vigencia_inicio),
         endsAt: parseDate(file.data_vigencia_fim),
@@ -81,6 +98,7 @@ export function normalizeContract(
   });
   const procurement = record(raw.licitacao);
   const sourceId = raw.id;
+  const publication = publicationText(raw.publicacao);
   const core = {
     id: `pvh-contrato-${sourceId}`,
     sourceId,
@@ -96,6 +114,8 @@ export function normalizeContract(
     category: text(raw.categoria),
     valueCents: amount(raw.valor, "Valor do contrato"),
     executedCents: amount(raw.valor_executado, "Executado informado"),
+    publication,
+    publishedAt: publicationDate(publication),
     signedAt: parseDate(raw.data_assinatura),
     startsAt: parseDate(raw.data_vigencia_inicio),
     endsAt: parseDate(raw.data_vigencia_fim),

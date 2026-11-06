@@ -21,6 +21,10 @@ reaplica em cada página e converte HTTP para HTTPS.
   identificado como “Executado informado”, sem tratá-lo como total pago.
 - Assinatura, vigência, documentos e indicação de aditivo vêm da API.
   Valores dos documentos não são somados ao valor do contrato.
+- A publicação é texto livre na fonte e é preservada como veio, inclusive quando
+  o campo traz outra informação. Só o texto sem letra nem dígito, como `**`, é
+  tratado como ausente. A data é extraída quando há uma única data `dd/mm/aaaa`
+  no texto ou o formato `ddmmaaaa`; com datas diferentes, fica ausente.
 - Situação é a publicada pela fonte, sem classificação automática pela vigência.
 - A API possui valores históricos de trilhões de reais. Preservamos os valores,
   sinalizamos contratos com valor igual ou superior a R$ 1 bilhão para conferência

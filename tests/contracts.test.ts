@@ -6,7 +6,10 @@ import {
   failedContractSnapshot,
   safeContractPageUrl,
 } from "../src/features/contratos/sync-core";
-import { contractSnapshotSchema } from "../src/features/contratos/schema";
+import {
+  contractSchema,
+  contractSnapshotSchema,
+} from "../src/features/contratos/schema";
 import {
   defaultContractFilters,
   filterContracts,
@@ -182,4 +185,75 @@ test("contratos: CNPJ e processo são encontrados com ou sem pontuação", () =>
   assert.deepEqual(search("1262026"), [2]);
   assert.deepEqual(search("98765432000110 empresa"), [3]);
   assert.deepEqual(search("001/2026"), [1, 3]);
+});
+test("contratos: publicação preserva o texto da fonte e só extrai data sem ambiguidade", () => {
+  const published = (publicacao: unknown) =>
+    normalizeContract({ ...raw, publicacao }, at);
+  const cases: [unknown, string | null, string | null][] = [
+    [
+      "D.O.M Nº 5.234, de 24/06/2016",
+      "D.O.M Nº 5.234, de 24/06/2016",
+      "2016-06-24",
+    ],
+    ["27012023", "27012023", "2023-01-27"],
+    ["32132023", "32132023", null],
+    ["2023-01-27", "2023-01-27", "2023-01-27"],
+    ["15/03/2023", "15/03/2023", "2023-03-15"],
+    [
+      "DOM de 15/03/2023, republicado em 15/03/2023",
+      "DOM de 15/03/2023, republicado em 15/03/2023",
+      "2023-03-15",
+    ],
+    [
+      "DOM de 15/03/2023, republicado em 20/03/2023",
+      "DOM de 15/03/2023, republicado em 20/03/2023",
+      null,
+    ],
+    ["DOM de 31/02/2023", "DOM de 31/02/2023", null],
+    ["TERMO ADITIVO", "TERMO ADITIVO", null],
+    ["**", null, null],
+    ["-", null, null],
+    ["", null, null],
+    [null, null, null],
+    [undefined, null, null],
+  ];
+  for (const [input, publication, publishedAt] of cases) {
+    const contract = published(input);
+    assert.equal(contract.publication, publication);
+    assert.equal(contract.publishedAt, publishedAt);
+  }
+  const { documents } = normalizeContract(
+    {
+      ...raw,
+      arquivos: [
+        {
+          nome: "Aditivo",
+          arquivo: "https://anexos.portovelho.ro.gov.br/a.pdf",
+          publicacao: "D.O.M Nº 3432 DE 15/03/2023",
+        },
+      ],
+    },
+    at,
+  );
+  assert.equal(documents[0].publication, "D.O.M Nº 3432 DE 15/03/2023");
+  assert.equal(documents[0].publishedAt, "2023-03-15");
+});
+test("contratos: registros gravados sem os campos de publicação continuam válidos", () => {
+  const contract = normalizeContract(
+    {
+      ...raw,
+      arquivos: [
+        { nome: "PDF", arquivo: "https://anexos.portovelho.ro.gov.br/a.pdf" },
+      ],
+    },
+    at,
+  );
+  const stored = JSON.parse(JSON.stringify(contract));
+  delete stored.publication;
+  delete stored.publishedAt;
+  delete stored.documents[0].publication;
+  const parsed = contractSchema.parse(stored);
+  assert.equal(parsed.publication, null);
+  assert.equal(parsed.publishedAt, null);
+  assert.equal(parsed.documents[0].publication, null);
 });
