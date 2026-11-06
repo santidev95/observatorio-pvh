@@ -110,10 +110,16 @@ export function normalizeContract(
             title:
               text(procurement.titulo) ??
               `Licitação ${procurement.numero ?? procurement.id}`,
+            modality: text(procurement.modalidade),
             url: `https://api.portovelho.ro.gov.br/api/v1/licitacoes/${procurement.id}`,
           }
         : null,
     documents,
+    commitments: [
+      ...new Set(
+        items(raw.empenhos).flatMap((item) => text(item.empenho) ?? []),
+      ),
+    ],
     sourceUrl: `https://api.portovelho.ro.gov.br/api/v1/contratos/${sourceId}`,
     sourceUpdatedAt: text(raw.updated_at),
     issues,

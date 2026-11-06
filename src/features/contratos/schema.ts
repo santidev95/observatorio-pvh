@@ -30,7 +30,13 @@ export const contractSchema = z.object({
     z.object({ name: z.string(), document: z.string().nullable() }),
   ),
   procurement: z
-    .object({ id: z.number().int(), title: z.string(), url: z.string().url() })
+    .object({
+      id: z.number().int(),
+      title: z.string(),
+      url: z.string().url(),
+      // Linhas gravadas antes destes campos continuam validas ate a proxima coleta.
+      modality: z.string().nullable().default(null),
+    })
     .nullable(),
   documents: z.array(
     z.object({
@@ -44,6 +50,7 @@ export const contractSchema = z.object({
       valueCents: money,
     }),
   ),
+  commitments: z.array(z.string()).default([]),
   sourceUrl: z.string().url(),
   sourceUpdatedAt: date,
   firstSeenAt: z.string(),
